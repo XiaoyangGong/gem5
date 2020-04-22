@@ -62,6 +62,7 @@ CacheMemory::CacheMemory(const Params *p)
     tagArray(p->tagArrayBanks, p->tagAccessLatency,
              p->start_index_bit, p->ruby_system)
 {
+    DPRINTF(RubyCacheMemory, "My test flag. Created a ruby cache memory.");
     m_cache_size = p->size;
     m_cache_assoc = p->assoc;
     m_replacementPolicy_ptr = p->replacement_policy;
