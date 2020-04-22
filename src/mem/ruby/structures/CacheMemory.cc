@@ -32,6 +32,7 @@
 #include "base/intmath.hh"
 #include "base/logging.hh"
 #include "debug/RubyCache.hh"
+#include "debug/RubyCacheMemory.hh"
 #include "debug/RubyCacheTrace.hh"
 #include "debug/RubyResourceStalls.hh"
 #include "debug/RubyStats.hh"
