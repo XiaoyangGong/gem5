@@ -689,7 +689,16 @@ machine(MachineType:L1Cache, "MSI cache")
         // z_stall stalls everything in the queue behind this request.
     }
 
-
+  	action(predict, "pd", desc="Predict if processor should read from invalid cache line"){
+  		L1Dcache.predict();
+  		/*
+    	// Check if tag exsit
+    	if (L1Dcache.isTagPresent(address)) {
+      	// Call predict function. Ask CacheMemory to read that address, and store it
+      	// L1Dcache.predict();
+    	}
+    	*/
+  	}
     /*************************************************************************/
     // These are the transition definition. These are simply each cell in the
     // table from Sorin et al. These are mostly in upper-left to bottom-right
@@ -702,6 +711,10 @@ machine(MachineType:L1Cache, "MSI cache")
     // Within the transition statement is a set of action to take during the
     // transition. These actions are executed atomically (i.e., all or nothing)
     transition(I, Load, IS_D) {
+    	// TODO: On LOAD event at invalid state, read from invalid line if tagHit
+
+
+    	 
         // Make sure there is room in the cache to put the block whenever the
         // miss returns. Otherwise we could deadlock.
         allocateCacheBlock;
@@ -715,6 +728,7 @@ machine(MachineType:L1Cache, "MSI cache")
     }
 
     transition(I, Store, IM_AD) {
+    	predict;
         allocateCacheBlock;
         allocateTBE;
         sendGetM;

@@ -31,8 +31,8 @@
 
 #include "base/intmath.hh"
 #include "base/logging.hh"
-#include "debug/RubyCache.hh"
 #include "debug/RubyCacheMemory.hh"
+#include "debug/RubyCache.hh"
 #include "debug/RubyCacheTrace.hh"
 #include "debug/RubyResourceStalls.hh"
 #include "debug/RubyStats.hh"
@@ -63,7 +63,6 @@ CacheMemory::CacheMemory(const Params *p)
     tagArray(p->tagArrayBanks, p->tagAccessLatency,
              p->start_index_bit, p->ruby_system)
 {
-    DPRINTF(RubyCacheMemory, "My test flag. Created a ruby cache memory.");
     m_cache_size = p->size;
     m_cache_assoc = p->assoc;
     m_replacementPolicy_ptr = p->replacement_policy;
@@ -169,6 +168,31 @@ CacheMemory::getAddressAtIdx(int idx) const
         return tmp;
     }
     return entry->m_Address;
+}
+
+//bool
+//CacheMemory::predict(Addr address, RubyRequestType type, DataBlock*& data_ptr)
+void CacheMemory::predict()
+{   /*
+    assert(address == makeLineAddress(address));
+    DPRINTF(RubyCache, "Try RIL address: %#x\n", address);
+    int64_t cacheSet = addressToCacheSet(address);
+    int loc = findTagInSet(cacheSet, address);
+    if (loc != -1) {
+        // Do we even have a tag match?
+        DPRINTF(RubyCache, "RIL TAGHIT on address: %#x\n", address);
+        AbstractCacheEntry* entry = m_cache[cacheSet][loc];
+        m_replacementPolicy_ptr->touch(replacement_data[cacheSet][loc]);
+        m_cache[cacheSet][loc]->setLastAccess(curTick());
+        data_ptr = &(entry->getDataBlk());
+
+        // Check if cache line state is invalid
+        return m_cache[cacheSet][loc]->m_Permission == AccessPermission_Invalid;
+    }
+    data_ptr = NULL;
+    return false;
+    */
+    DPRINTF(RubyCacheMemory, "Predict!");
 }
 
 bool

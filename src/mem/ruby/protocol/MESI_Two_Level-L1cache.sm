@@ -997,6 +997,20 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       cache_entry.isPrefetch := true;
   }
 
+  // TODO: add actions to
+  // 1. Predict using invalid line or not
+  // 2. Compare prediction with actual data
+
+  action(pd_predict, "pd", desc="Predict if processor should read from invalid cache line"){
+    L1Dcache.predict();
+    /*
+    // Check if tag exsit
+    if (L1Dcache.isTagPresent(address)) {
+      // Call predict function. Ask CacheMemory to read that address, and store it
+      // L1Dcache.predict();
+    }
+    */
+  }
 
   //*****************************************************
   // TRANSITIONS
@@ -1030,6 +1044,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   transition({NP,I}, Load, IS) {
+    // TODO: Add predictor
+    // For static predictor (always taken), read from invalid cache line if tag hit
+    predict;
+    pd_predict;
     oo_allocateL1DCacheBlock;
     i_allocateTBE;
     a_issueGETS;
@@ -1250,6 +1268,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   transition(IS, Data_all_Acks, S) {
+    // TODO: Compare actual data w/ predicted invalid cache line data
     u_writeDataToL1Cache;
     hx_load_hit;
     s_deallocateTBE;
