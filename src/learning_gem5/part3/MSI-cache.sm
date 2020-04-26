@@ -689,16 +689,24 @@ machine(MachineType:L1Cache, "MSI cache")
         // z_stall stalls everything in the queue behind this request.
     }
 
+    
   	action(predict, "pd", desc="Predict if processor should read from invalid cache line"){
-  		L1Dcache.predict();
-  		/*
-    	// Check if tag exsit
-    	if (L1Dcache.isTagPresent(address)) {
-      	// Call predict function. Ask CacheMemory to read that address, and store it
-      	// L1Dcache.predict();
-    	}
-    	*/
+        // Read invalid cacheline if it exist
+  		// Entry cache_entry := getCacheEntry(address);
+
+        Entry inv_cache_entry := getCacheEntry(address);
+        cacheMemory.predict();
+
+        
+        // If invalid cache line does exist, decide wheather to use it
+        // I guess is_valid is just checking if it's NULL
+        // It's not checking cache line state
+        if(is_valid(inv_cache_entry)){
+            // Make prediction
+            // Update predicted value. Need to find a global data structure
+        }
   	}
+    
     /*************************************************************************/
     // These are the transition definition. These are simply each cell in the
     // table from Sorin et al. These are mostly in upper-left to bottom-right
@@ -712,8 +720,7 @@ machine(MachineType:L1Cache, "MSI cache")
     // transition. These actions are executed atomically (i.e., all or nothing)
     transition(I, Load, IS_D) {
     	// TODO: On LOAD event at invalid state, read from invalid line if tagHit
-
-
+        predict;
     	 
         // Make sure there is room in the cache to put the block whenever the
         // miss returns. Otherwise we could deadlock.
@@ -728,7 +735,6 @@ machine(MachineType:L1Cache, "MSI cache")
     }
 
     transition(I, Store, IM_AD) {
-    	predict;
         allocateCacheBlock;
         allocateTBE;
         sendGetM;
@@ -746,6 +752,10 @@ machine(MachineType:L1Cache, "MSI cache")
 
     // Similarly, on either DataDirNoAcks or DataOwner we should go to S
     transition(IS_D, {DataDirNoAcks, DataOwner}, S) {
+        // TODO: 
+        // 1. Read actual data
+        // 2. Compare predicted data vs actual data
+        // 3. Update score and predictor
         writeDataToCache;
         deallocateTBE;
         externalLoadHit;

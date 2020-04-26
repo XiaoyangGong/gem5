@@ -189,6 +189,7 @@ structure (DirectoryMemory, external = "yes") {
 structure (CacheMemory, external = "yes") {
   bool cacheAvail(Addr);
   Addr cacheProbe(Addr);
+  void predict();
   AbstractCacheEntry allocate(Addr, AbstractCacheEntry);
   AbstractCacheEntry allocate(Addr, AbstractCacheEntry, bool);
   void allocateVoid(Addr, AbstractCacheEntry);
