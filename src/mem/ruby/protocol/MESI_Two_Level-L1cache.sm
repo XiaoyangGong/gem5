@@ -1046,7 +1046,6 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   transition({NP,I}, Load, IS) {
     // TODO: Add predictor
     // For static predictor (always taken), read from invalid cache line if tag hit
-    predict;
     pd_predict;
     oo_allocateL1DCacheBlock;
     i_allocateTBE;

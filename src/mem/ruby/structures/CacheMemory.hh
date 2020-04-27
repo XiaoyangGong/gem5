@@ -47,6 +47,8 @@
 #include "mem/ruby/system/CacheRecorder.hh"
 #include "params/RubyCache.hh"
 #include "sim/sim_object.hh"
+#include "mem/ruby/common/MachineID.hh"
+#include "mem/ruby/common/DataBlock.hh"
 
 class CacheMemory : public SimObject
 {
@@ -58,10 +60,13 @@ class CacheMemory : public SimObject
 
     void init();
 
-    // Make prediction
-    void predict();
-    
     // Public Methods
+    // Make prediction
+    void predict(MachineID machineID, Addr address);
+
+    // Check predicted value with actual value
+    void predictScoreBoard(MachineID machineID, Addr address, DataBlock& dataBlk);
+    
     // perform a cache access and see if we hit or not.  Return true on a hit.
     bool tryCacheAccess(Addr address, RubyRequestType type,
                         DataBlock*& data_ptr);
@@ -165,6 +170,10 @@ class CacheMemory : public SimObject
     CacheMemory& operator=(const CacheMemory& obj);
 
   private:
+    struct predict_res_t{
+        DataBlock* blk = new DataBlock();
+        bool taken = false;
+    };
     // Data Members (m_prefix)
     bool m_is_instruction_only_cache;
 
@@ -173,6 +182,10 @@ class CacheMemory : public SimObject
     std::unordered_map<Addr, int> m_tag_index;
     std::vector<std::vector<AbstractCacheEntry*> > m_cache;
 
+    // Stores predicted value for each processor
+    // First index is processor #
+    // Second index is predicted value
+    std::unordered_map<int, predict_res_t> m_predict;
     /**
      * We use BaseReplacementPolicy from Classic system here, hence we can use
      * different replacement policies from Classic system in Ruby system.
@@ -182,6 +195,9 @@ class CacheMemory : public SimObject
     BankedArray dataArray;
     BankedArray tagArray;
 
+
+    int m_total_predict;
+    int m_correct_predict;
     int m_cache_size;
     int m_cache_num_sets;
     int m_cache_num_set_bits;
@@ -189,6 +205,8 @@ class CacheMemory : public SimObject
     int m_start_index_bit;
     bool m_resource_stalls;
     int m_block_size;
+
+
 
     /**
      * We store all the ReplacementData in a 2-dimensional array. By doing
@@ -205,6 +223,9 @@ class CacheMemory : public SimObject
      * false.
      */
     bool m_use_occupancy;
+
+    // Score for predictor
+    int score; 
 };
 
 std::ostream& operator<<(std::ostream& out, const CacheMemory& obj);

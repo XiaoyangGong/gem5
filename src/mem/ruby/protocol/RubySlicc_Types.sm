@@ -187,9 +187,10 @@ structure (DirectoryMemory, external = "yes") {
 }
 
 structure (CacheMemory, external = "yes") {
+  void predict(MachineID machineID, Addr address);
+  void predictScoreBoard(MachineID machineID, Addr address, DataBlock dataBlk);
   bool cacheAvail(Addr);
   Addr cacheProbe(Addr);
-  void predict();
   AbstractCacheEntry allocate(Addr, AbstractCacheEntry);
   AbstractCacheEntry allocate(Addr, AbstractCacheEntry, bool);
   void allocateVoid(Addr, AbstractCacheEntry);
