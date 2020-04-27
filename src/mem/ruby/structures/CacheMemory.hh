@@ -172,7 +172,7 @@ class CacheMemory : public SimObject
   private:
     struct predict_res_t{
         DataBlock* blk = new DataBlock();
-        bool taken = false;
+        bool taken = true;
     };
     // Data Members (m_prefix)
     bool m_is_instruction_only_cache;
