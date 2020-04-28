@@ -691,19 +691,7 @@ machine(MachineType:L1Cache, "MSI cache")
 
     
   	action(predict, "pd", desc="Predict if processor should read from invalid cache line"){
-        // Read invalid cacheline if it exist
-  		// Entry cache_entry := getCacheEntry(address);
-
-        Entry inv_cache_entry := getCacheEntry(address);
         cacheMemory.predict(machineID, address);
-
-        // If invalid cache line does exist, decide wheather to use it
-        // I guess is_valid is just checking if it's NULL
-        // It's not checking cache line state
-        if(is_valid(inv_cache_entry)){
-            // Make prediction
-            // Update predicted value. Need to find a global data structure
-        }
   	}
 
     action(comparePredict, "cmppd", desc="Compare actual value w/ predicted value"){

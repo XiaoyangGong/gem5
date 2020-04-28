@@ -44,6 +44,7 @@
 
 using namespace std;
 
+
 ostream&
 operator<<(ostream& out, const CacheMemory& obj)
 {
@@ -178,59 +179,93 @@ CacheMemory::getAddressAtIdx(int idx) const
 //CacheMemory::predict(Addr address, RubyRequestType type, DataBlock*& data_ptr)
 void CacheMemory::predict(MachineID machineID, Addr address)
 {   
-    // Increament total number of prediction couter by 1
-    m_total_predict++;
-
-    // Get requesting cache's ID
+   // Get requesting cache's ID
     int requestorID = machineID.num;
 
     // Read from invalid cache line
+    // NULL is returned if cache line doesn't exist
     AbstractCacheEntry* entry = lookup(address);
     
-    // Get invalid cache line's data value
-    DataBlock& dataBlk = entry->getDataBlk();
-    DataBlock* dataBlk_ptr = &dataBlk;
-
-    // Predict if processor should use invalid cache line
-    // TODO: bool taken = predictor();
-    // Assume always taken
-    bool taken = true;
-
-    // Store invalid line data and T/NT to predict_result
+    int taken = -1;
     predict_res_t predict_res = {};
-    predict_res.blk = dataBlk_ptr;
-    predict_res.taken = taken;
+    // If entry exisits
+    // Increament total number of prediction couter by 1
+    // Read from invalid entry
+    // Get T/NT decision from predictor
+    // Create an predict entry in table
+    if(entry != NULL){
+        m_total_predict++;
+        // Get invalid cache line's data value
+        DataBlock& dataBlk = entry->getDataBlk();
+        DataBlock* dataBlk_ptr = &dataBlk;
+        taken = 1;
+        // Store invalid line data and T/NT to predict_result
+        predict_res.blk = dataBlk_ptr;
+        predict_res.taken = taken;
+    }
+    else{
+        taken = -1;
+        predict_res.taken = taken;
+    }
 
     // Store [requestorID, data] to a table
     m_predict[requestorID] = predict_res;
+    //DPRINTF(RubyCacheMemory, "Create Machine ID: %d\n", requestorID);
 
-    DPRINTF(RubyCacheMemory, "Node ID is %d\n", machineID.num);
+    //DPRINTF(RubyCacheMemory, "Node ID is %d\n", machineID.num);
 }
 
-void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock& actual_data){
+void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock& actual_blk){
 
     // Get receiving cache's ID
     int receiverID = machineID.num;
 
+    // Return 
+    // Get offset of address
+    Addr offset = getOffset(address);
+
+    // get actual value
+    const uint8_t* actual_value = actual_blk.getData(offset, 8);  //Assume double
+    
     // Find predict result in table
     predict_res_t predict_res = m_predict[receiverID];
 
-    // Get invalid line data and taken/nontaken info
-    DataBlock& predict_data = *predict_res.blk;
-    bool taken = predict_res.taken;
+    /*
+    // Remove <requestor, data> from table
+    int rm_success = m_predict.erase(receiverID);
+    // Return if fail to remove (receiver ID doesn't exsit)
+    if(!rm_success) return;
+    */
 
+    int taken = predict_res.taken;
+
+    // Ignore the case that we didn't make a prediction (taken = -1) 
     // If we predict taken and predict value matches with actual value
     // Increment score by one
     // Else if we predict non-taken and predict value doesn't match with actual value
     // Increment score by one
-    if (predict_data == actual_data && taken) 
-        score++;
-    else if(!(predict_data == actual_data) && !taken)
-        score++;
+    if(taken != -1){
+        //DPRINTF(RubyCacheMemory, "Remove Machine ID: %d\n", receiverID);
+        // Get invalid line data and taken/nontaken info
+        DataBlock& predict_blk = *predict_res.blk;
+        const uint8_t* predict_value = predict_blk.getData(offset, 8);  // Assume double
+        //DPRINTF(RubyCacheMemory, "Machine ID: %d, Predicted value is %u, Actual value is %u \n", receiverID, *predict_value, *actual_value);
 
-    // Remove <requestor, data> from table
+        // Correct prediction if we predict taken, and invalid cache line value is actual value
+        if (*predict_value == *actual_value && taken == 1) 
+            m_correct_predict++;
+        // Correct prediction if we predict non-taken, and invalid cache line value is different from actual value
+        else if(*predict_value != *actual_value && taken == 0)
+            m_correct_predict++;
+    }
     m_predict.erase(receiverID);
 }
+
+void CacheMemory::clearPredict(MachineID machineID){
+    int receiverID = machineID.num;
+    m_predict.erase(receiverID);
+}
+
 
 
 

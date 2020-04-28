@@ -36,6 +36,7 @@
 #include <mutex>
 #include <thread>
 
+#include "debug/RubyCacheMemory.hh"
 #include "base/logging.hh"
 #include "base/pollevent.hh"
 #include "base/types.hh"
@@ -44,6 +45,10 @@
 #include "sim/sim_events.hh"
 #include "sim/sim_exit.hh"
 #include "sim/stat_control.hh"
+#include "mem/ruby/structures/CacheMemory.hh"
+
+int m_total_predict;
+int m_correct_predict;
 
 //! Mutex for handling async events.
 std::mutex asyncEventMutex;
@@ -147,7 +152,8 @@ simulate(Tick num_cycles)
         quantum_event->deschedule();
         delete quantum_event;
     }
-
+    float score = (float)m_correct_predict / (float)m_total_predict; 
+    DPRINTF(RubyCacheMemory, "Total prediction: %d, Correct prediction: %d, Predictor accuracy is %.3f\n", m_total_predict, m_correct_predict, score);
     return global_exit_event;
 }
 

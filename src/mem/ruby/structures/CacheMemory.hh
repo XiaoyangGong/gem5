@@ -50,6 +50,9 @@
 #include "mem/ruby/common/MachineID.hh"
 #include "mem/ruby/common/DataBlock.hh"
 
+extern int m_total_predict;
+extern int m_correct_predict;
+
 class CacheMemory : public SimObject
 {
   public:
@@ -66,6 +69,9 @@ class CacheMemory : public SimObject
 
     // Check predicted value with actual value
     void predictScoreBoard(MachineID machineID, Addr address, DataBlock& dataBlk);
+    
+    // Clear predict entry
+    void clearPredict(MachineID machineID);
     
     // perform a cache access and see if we hit or not.  Return true on a hit.
     bool tryCacheAccess(Addr address, RubyRequestType type,
@@ -172,7 +178,7 @@ class CacheMemory : public SimObject
   private:
     struct predict_res_t{
         DataBlock* blk = new DataBlock();
-        bool taken = true;
+        int taken = -1;
     };
     // Data Members (m_prefix)
     bool m_is_instruction_only_cache;
@@ -195,9 +201,6 @@ class CacheMemory : public SimObject
     BankedArray dataArray;
     BankedArray tagArray;
 
-
-    int m_total_predict;
-    int m_correct_predict;
     int m_cache_size;
     int m_cache_num_sets;
     int m_cache_num_set_bits;
@@ -224,8 +227,6 @@ class CacheMemory : public SimObject
      */
     bool m_use_occupancy;
 
-    // Score for predictor
-    int score; 
 };
 
 std::ostream& operator<<(std::ostream& out, const CacheMemory& obj);

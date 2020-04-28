@@ -1002,16 +1002,18 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   // 2. Compare prediction with actual data
 
   action(pd_predict, "pd", desc="Predict if processor should read from invalid cache line"){
-    L1Dcache.predict();
-    /*
-    // Check if tag exsit
-    if (L1Dcache.isTagPresent(address)) {
-      // Call predict function. Ask CacheMemory to read that address, and store it
-      // L1Dcache.predict();
-    }
-    */
+      L1Dcache.predict(machineID, address);
   }
 
+  action(cmpd_comparePredict, "cmppd", desc="Compare actual value w/ predicted value"){
+    // Caller of this action is receiving cache. Get its machine ID and pass to predictScoreBoard()
+    L1Dcache.predictScoreBoard(machineID, address, cache_entry.DataBlk);
+  }
+
+  action(clPd_clearPredict, "clpd", desc="Clear predict entry if block is invalidated"){
+    // Caller of this action is receiving cache. Get its machine ID and pass to predictScoreBoard()
+    L1Dcache.clearPredict(machineID);
+  }
   //*****************************************************
   // TRANSITIONS
   //*****************************************************
@@ -1044,9 +1046,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   transition({NP,I}, Load, IS) {
-    // TODO: Add predictor
-    // For static predictor (always taken), read from invalid cache line if tag hit
-    pd_predict;
+    pd_predict
     oo_allocateL1DCacheBlock;
     i_allocateTBE;
     a_issueGETS;
@@ -1267,9 +1267,9 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   }
 
   transition(IS, Data_all_Acks, S) {
-    // TODO: Compare actual data w/ predicted invalid cache line data
     u_writeDataToL1Cache;
     hx_load_hit;
+    cmpd_comparePredict;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
     kd_wakeUpDependents;
@@ -1285,6 +1285,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   transition(IS_I, Data_all_Acks, I) {
     u_writeDataToL1Cache;
+    // TODO: clear prediction entry and count as mispredict
+    clPd_clearPredict;
     hx_load_hit;
     s_deallocateTBE;
     o_popIncomingResponseQueue;
@@ -1299,6 +1301,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   transition(IS, DataS_fromL1, S) {
     u_writeDataToL1Cache;
+    cmpd_comparePredict;
     j_sendUnblock;
     hx_load_hit;
     s_deallocateTBE;
@@ -1316,6 +1319,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   transition(IS_I, DataS_fromL1, I) {
     u_writeDataToL1Cache;
+    // TODO: clear prediction entry and count as mispredict
+    clPd_clearPredict;
     j_sendUnblock;
     hx_load_hit;
     s_deallocateTBE;
@@ -1333,6 +1338,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   // directory is blocked when sending exclusive data
   transition(IS_I, Data_Exclusive, E) {
     u_writeDataToL1Cache;
+
+    // TODO: Compare predict?
+    cmpd_comparePredict;
+    //clPd_clearPredict;
     hx_load_hit;
     jj_sendExclusiveUnblock;
     s_deallocateTBE;
@@ -1351,6 +1360,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
 
   transition(IS, Data_Exclusive, E) {
     u_writeDataToL1Cache;
+    cmpd_comparePredict;
     hx_load_hit;
     jj_sendExclusiveUnblock;
     s_deallocateTBE;
