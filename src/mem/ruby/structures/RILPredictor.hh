@@ -12,7 +12,7 @@
 class RILPredictor : public SimObject
 {
   public:
-    RILPredictor(RILPredictorParams *p);
+    RILPredictor(RILPredictorParams *p, string predictor_type);
     ~RILPredictor();
 
     bool predict(Addr address);

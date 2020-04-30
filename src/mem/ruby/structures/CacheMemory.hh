@@ -176,8 +176,7 @@ class CacheMemory : public SimObject
     CacheMemory& operator=(const CacheMemory& obj);
 
   private:
-    const int local_hist_size = 128;
-    const int global_hist_size = 128; 
+    RILPredictor::RILPredictor* m_predictor;
     struct predict_res_t{
         DataBlock* blk = new DataBlock();
         int taken = -1;

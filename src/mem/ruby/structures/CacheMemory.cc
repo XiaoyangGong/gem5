@@ -78,6 +78,7 @@ CacheMemory::CacheMemory(const Params *p)
     m_block_size = p->block_size;  // may be 0 at this point. Updated in init()
     m_use_occupancy = dynamic_cast<WeightedLRUPolicy*>(
                                     m_replacementPolicy_ptr) ? true : false;
+    m_predictor = new 
 }
 
 void
@@ -175,18 +176,6 @@ CacheMemory::getAddressAtIdx(int idx) const
     }
     return entry->m_Address;
 }
-
-
-// Return 1 for taken, 0 for non-taken
-// TODO: should put predictor related function into a seperate .cc file
-int predictor(){
-
-}
-
-void update_predictor(){
-
-}
-
 
 void CacheMemory::predict(MachineID machineID, Addr address)
 {   
