@@ -10,9 +10,7 @@ Author: Xiaoyang Gong
 
 RILPredictor::RILPredictor(int predictor_type) :
 predictor_type(predictor_type),
-local_hist_size(128),
-global_hist_size(128)
-//state(0)
+hist_reg_size(8)
 {
     DPRINTF(RILPredictor, "Created the RIL Predictor\n");
 }
@@ -23,27 +21,62 @@ RILPredictor::predict(Addr address)
 {
     if(predictor_type == 0)
         return true;
-    auto curr_predict = curr_predict_map.find(address);
-    // if found, return predict value
-    // else return true by default
-    if(curr_predict != curr_predict_map.end()){
-        int state = curr_predict->second;
-        // Get T/NT from state. Dependent on type of FSM used
-        if(predictor_type == 1)
-            return predict_LT(state);
-        else if(predictor_type == 2)
-            return predict_A1(state);
-        else if(predictor_type == 3)
-            return predict_A2(state);
-        else if(predictor_type == 4)
-            return predict_A3(state);
-        else if(predictor_type == 5)
-            return predict_A4(state);
+
+    // Find history register from m_hist_reg_table indexed by address
+    auto hist_reg_ite = m_hist_reg_table.find(address);
+    // If hist_reg found, get 8 bit history
+    // else assign all 0 to hist_reg
+    if(hist_reg_ite != m_hist_reg_table.end()){
+        uint8_t hist_reg = hist_reg_ite -> second;
+
+        // Using hist_reg as index/key, find state in pattern table
+        auto state_ite = m_pattern_table.find(hist_reg);
+        // If state is found, get T/NT from state variable
+        if(state_ite != m_pattern_table.end()){
+            int state = state_ite->second;
+            if(predictor_type == 1)
+                return predict_LT(state);
+            else if(predictor_type == 2)
+                return predict_A1(state);
+            else if(predictor_type == 3)
+                return predict_A2(state);
+            else if(predictor_type == 4)
+                return predict_A3(state);
+            else if(predictor_type == 5)
+                return predict_A4(state);
+        }
+        // if not found, set init state value to 0
+        else{
+            m_pattern_table[hist_reg] = 0;
+            return false;
+        }
     }
+    // If hist_reg not found, init it to all 0
+    // Try get state when pattern is all 0
+    // If not, also init state value for pattern 8'b0 to 0
     else{
-        // Create initial state 0
-        curr_predict_map[address] = 0;
-        return false;
+        m_hist_reg_table[address] = 0;
+        auto state_ite = m_pattern_table.find(0);
+        // If state is found, get T/NT from state variable
+        if(state_ite != m_pattern_table.end()){
+            int state = state_ite->second;
+            if(predictor_type == 1)
+                return predict_LT(state);
+            else if(predictor_type == 2)
+                return predict_A1(state);
+            else if(predictor_type == 3)
+                return predict_A2(state);
+            else if(predictor_type == 4)
+                return predict_A3(state);
+            else if(predictor_type == 5)
+                return predict_A4(state);
+        }
+        // if not found, set init state value to 0
+        else{
+            m_pattern_table[0] = 0;
+            return false;
+        }        
+
     }
     return false;
 }
@@ -53,16 +86,26 @@ RILPredictor::update_predict(Addr address, bool actual_taken)
 {
     if(predictor_type == 0)
         return;
-    else if(predictor_type == 1)
-        update_LT(address, actual_taken);
+    // First update hist_reg
+    uint8_t hist_reg = m_hist_reg_table[address];
+    uint8_t hist_reg_tmp = hist_reg;
+    if(actual_taken)
+        hist_reg_tmp = (hist_reg << 1) + (uint8_t)1;
+    else 
+        hist_reg_tmp = hist_reg << 1;
+    m_hist_reg_table[address] = hist_reg_tmp;
+
+    // Next update pattern table
+    if(predictor_type == 1)
+        update_LT(hist_reg, actual_taken);
     else if(predictor_type == 2)
-        update_A1(address, actual_taken);
+        update_A1(hist_reg, actual_taken);
     else if(predictor_type == 3)
-        update_A2(address, actual_taken);
+        update_A2(hist_reg, actual_taken);
     else if(predictor_type == 4)
-        update_A3(address, actual_taken);
+        update_A3(hist_reg, actual_taken);
     else if(predictor_type == 5)
-        update_A4(address, actual_taken);
+        update_A4(hist_reg, actual_taken);
     else{
         std::cout << "Undefined predictor_type!" << std::endl;
         exit(1);
@@ -131,26 +174,26 @@ RILPredictor::predict_A4(int state){
 }
 
 void 
-RILPredictor::update_LT(Addr address, bool taken)
+RILPredictor::update_LT(uint8_t hist_reg, bool taken)
 {
-    int state = curr_predict_map[address];
+    int state = m_pattern_table[hist_reg];
     switch(state){
         case 0 :
         if(taken){
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         }
         else{
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         }
         
         break;
 
         case 1 :
         if(taken){
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         }
         else{
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         }
         break;
 
@@ -162,36 +205,36 @@ RILPredictor::update_LT(Addr address, bool taken)
 
 
 void 
-RILPredictor::update_A1(Addr address, bool taken)
+RILPredictor::update_A1(uint8_t hist_reg, bool taken)
 {
-    int state = curr_predict_map[address];
+    int state = m_pattern_table[hist_reg];
     switch(state){
         case 0 :
         if(taken) 
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 1 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 2;
+            m_pattern_table[hist_reg] = 2;
         break;
 
         case 2 :
         if(taken) 
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 3 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 2;
+            m_pattern_table[hist_reg] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");
@@ -200,36 +243,36 @@ RILPredictor::update_A1(Addr address, bool taken)
 
 
 void 
-RILPredictor::update_A2(Addr address, bool taken)
+RILPredictor::update_A2(uint8_t hist_reg, bool taken)
 {
-    int state = curr_predict_map[address];
+    int state = m_pattern_table[hist_reg];
     switch(state){
         case 0 :
         if(taken) 
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 1 :
         if(taken) 
-            curr_predict_map[address] = 2;
+            m_pattern_table[hist_reg] = 2;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 2 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         break;
 
         case 3 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 2;
+            m_pattern_table[hist_reg] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");
@@ -237,36 +280,36 @@ RILPredictor::update_A2(Addr address, bool taken)
 }
 
 void 
-RILPredictor::update_A3(Addr address, bool taken)
+RILPredictor::update_A3(uint8_t hist_reg, bool taken)
 {
-    int state = curr_predict_map[address];
+    int state = m_pattern_table[hist_reg];
     switch(state){
         case 0 :
         if(taken) 
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 1 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 2 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 3 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 2;
+            m_pattern_table[hist_reg] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");
@@ -274,36 +317,36 @@ RILPredictor::update_A3(Addr address, bool taken)
 }
 
 void 
-RILPredictor::update_A4(Addr address, bool taken)
+RILPredictor::update_A4(uint8_t hist_reg, bool taken)
 {
-    int state = curr_predict_map[address];
+    int state = m_pattern_table[hist_reg];
     switch(state){
         case 0 :
         if(taken) 
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 1 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 0;
+            m_pattern_table[hist_reg] = 0;
         break;
 
         case 2 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 1;
+            m_pattern_table[hist_reg] = 1;
         break;
 
         case 3 :
         if(taken) 
-            curr_predict_map[address] = 3;
+            m_pattern_table[hist_reg] = 3;
         else 
-            curr_predict_map[address] = 2;
+            m_pattern_table[hist_reg] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");

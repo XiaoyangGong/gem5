@@ -22,15 +22,11 @@ class RILPredictor
 
   private:    
     const int predictor_type;
-    const int local_hist_size;
-    const int global_hist_size; 
-    //int state;
-    std::unordered_map<Addr, int> curr_predict_map;
-    // Local history buffer. Record history of T/TN for an address
-    std::unordered_map<Addr, std::list<bool>> m_local_hist;
+    const int hist_reg_size;
 
-    // Global history buffer.
-    std::list<bool> m_global_hist;
+    //Assume 8 bit long history
+    std::unordered_map<Addr, uint8_t> m_hist_reg_table;
+    std::unordered_map<uint8_t, int> m_pattern_table;
   
   private:
     bool predict_LT(int state);
@@ -39,11 +35,11 @@ class RILPredictor
     bool predict_A3(int state);
     bool predict_A4(int state);
     
-    void update_LT(Addr address, bool taken);
-    void update_A1(Addr address, bool taken);
-    void update_A2(Addr address, bool taken);
-    void update_A3(Addr address, bool taken);
-    void update_A4(Addr address, bool taken);
+    void update_LT(uint8_t hist_reg, bool taken);
+    void update_A1(uint8_t hist_reg, bool taken);
+    void update_A2(uint8_t hist_reg, bool taken);
+    void update_A3(uint8_t hist_reg, bool taken);
+    void update_A4(uint8_t hist_reg, bool taken);
     
 };
 
