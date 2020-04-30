@@ -76,7 +76,7 @@ RubySystem::RubySystem(const Params *p)
     // Create the profiler
     m_profiler = new Profiler(p, this);
     m_phys_mem = p->phys_mem;
-    int prd_type = 5;
+    int prd_type = 2;
     m_predictor = new RILPredictor(prd_type);
     cout << "create a type " << prd_type << " RIL predictor!" << endl;
 }

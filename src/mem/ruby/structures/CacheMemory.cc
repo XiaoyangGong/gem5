@@ -242,24 +242,26 @@ void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock
     // Else if we predict non-taken and predict value doesn't match with actual value
     // Increment score by one
     if(taken != -1){
-        // Update m_predictor
-        if(taken == 1)
-            m_predictor->update_predict(true);
-        else if(taken == 0)
-            m_predictor->update_predict(false);
-           
-        //DPRINTF(RubyCacheMemory, "Remove Machine ID: %d\n", receiverID);
         // Get invalid line data and taken/nontaken info
-        DataBlock& predict_blk = *predict_res.blk;
-        const uint8_t* predict_value = predict_blk.getData(offset, 8);  // Assume double
+        DataBlock& invalid_blk = *predict_res.blk;
+        const uint8_t* invalid_value = invalid_blk.getData(offset, 8);  // Assume double
         //DPRINTF(RubyCacheMemory, "Machine ID: %d, Predicted value is %u, Actual value is %u \n", receiverID, *predict_value, *actual_value);
 
-        // Correct prediction if we predict taken, and invalid cache line value is actual value
-        if (*predict_value == *actual_value && taken == 1) 
-            m_correct_predict++;
-        // Correct prediction if we predict non-taken, and invalid cache line value is different from actual value
-        else if(*predict_value != *actual_value && taken == 0)
-            m_correct_predict++;
+        // if invaild value equal to actual value, this invalid cache line should be taken
+        if(*invalid_value == *actual_value){
+            m_predictor->update_predict(address, true);
+            // We have a correct prediction if predict as taken
+            if(taken == 1)
+                m_correct_predict++;
+        }
+        // else this invalid cache line should be non taken
+        else{
+            m_predictor->update_predict(address, false);
+            // We have a correct prediction if predict as non taken
+            if(taken == 0)
+                m_correct_predict++;
+
+        }
     }
     m_predict.erase(receiverID);
 }

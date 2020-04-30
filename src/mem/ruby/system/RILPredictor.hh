@@ -18,14 +18,14 @@ class RILPredictor
     bool predict(Addr address);
 
     // Check predicted value with actual value
-    void update_predict(bool taken);
+    void update_predict(Addr address, bool taken);
 
-  private:
+  private:    
     const int predictor_type;
     const int local_hist_size;
     const int global_hist_size; 
-    int state;
-    bool curr_predict;
+    //int state;
+    std::unordered_map<Addr, int> curr_predict_map;
     // Local history buffer. Record history of T/TN for an address
     std::unordered_map<Addr, std::list<bool>> m_local_hist;
 
@@ -33,11 +33,18 @@ class RILPredictor
     std::list<bool> m_global_hist;
   
   private:
-    void predict_LT(bool taken);
-    void predict_A1(bool taken);
-    void predict_A2(bool taken);
-    void predict_A3(bool taken);
-    void predict_A4(bool taken);
+    bool predict_LT(int state);
+    bool predict_A1(int state);
+    bool predict_A2(int state);
+    bool predict_A3(int state);
+    bool predict_A4(int state);
+    
+    void update_LT(Addr address, bool taken);
+    void update_A1(Addr address, bool taken);
+    void update_A2(Addr address, bool taken);
+    void update_A3(Addr address, bool taken);
+    void update_A4(Addr address, bool taken);
+    
 };
 
 

@@ -11,9 +11,8 @@ Author: Xiaoyang Gong
 RILPredictor::RILPredictor(int predictor_type) :
 predictor_type(predictor_type),
 local_hist_size(128),
-global_hist_size(128),
-state(0),
-curr_predict(false)
+global_hist_size(128)
+//state(0)
 {
     DPRINTF(RILPredictor, "Created the RIL Predictor\n");
 }
@@ -22,25 +21,51 @@ curr_predict(false)
 bool
 RILPredictor::predict(Addr address)
 {
-    return curr_predict;
+    if(predictor_type == 0)
+        return true;
+    auto curr_predict = curr_predict_map.find(address);
+    // if found, return predict value
+    // else return true by default
+    if(curr_predict != curr_predict_map.end()){
+        int state = curr_predict->second;
+        // Get T/NT from state. Dependent on type of FSM used
+        if(predictor_type == 1)
+            return predict_LT(state);
+        else if(predictor_type == 2)
+            return predict_A1(state);
+        else if(predictor_type == 3)
+            return predict_A2(state);
+        else if(predictor_type == 4)
+            return predict_A3(state);
+        else if(predictor_type == 5)
+            return predict_A4(state);
+    }
+    else{
+        // Create initial state 0
+        curr_predict_map[address] = 0;
+        return false;
+    }
+    return false;
 }
 
 void
-RILPredictor::update_predict(bool actual_taken)
+RILPredictor::update_predict(Addr address, bool actual_taken)
 {
     if(predictor_type == 0)
-        predict_LT(actual_taken);
+        return;
     else if(predictor_type == 1)
-        predict_A1(actual_taken);
+        update_LT(address, actual_taken);
     else if(predictor_type == 2)
-        predict_A2(actual_taken);
+        update_A1(address, actual_taken);
     else if(predictor_type == 3)
-        predict_A3(actual_taken);
+        update_A2(address, actual_taken);
     else if(predictor_type == 4)
-        predict_A4(actual_taken);
+        update_A3(address, actual_taken);
+    else if(predictor_type == 5)
+        update_A4(address, actual_taken);
     else{
-        // Assume always taken if type of predictor is undefined
-        curr_predict = true;
+        std::cout << "Undefined predictor_type!" << std::endl;
+        exit(1);
     }
 
 }
@@ -49,21 +74,84 @@ RILPredictor::update_predict(bool actual_taken)
 // Static predictors
 // FSM reference: Page 3 https://dl.acm.org/doi/pdf/10.1145/123465.123475
 // "Two-Level Adaptive Training Branch Prediction"
+bool 
+RILPredictor::predict_LT(int state){
+    if(state == 0)
+        return false;
+    else 
+        return true;
+}
+
+bool 
+RILPredictor::predict_A1(int state){
+    if(state == 0)
+        return false;
+    else if(state == 1) 
+        return true;
+    else if(state == 2) 
+        return true;
+    else 
+        return true;
+}
+
+bool 
+RILPredictor::predict_A2(int state){
+    if(state == 0)
+        return false;
+    else if(state == 1) 
+        return false;
+    else if(state == 2) 
+        return true;
+    else 
+        return true;
+}
+
+bool 
+RILPredictor::predict_A3(int state){
+    if(state == 0)
+        return false;
+    else if(state == 1) 
+        return false;
+    else if(state == 2) 
+        return true;
+    else 
+        return true;
+}
+
+bool 
+RILPredictor::predict_A4(int state){
+    if(state == 0)
+        return false;
+    else if(state == 1) 
+        return false;
+    else if(state == 2) 
+        return true;
+    else 
+        return true;
+}
 
 void 
-RILPredictor::predict_LT(bool taken)
+RILPredictor::update_LT(Addr address, bool taken)
 {
+    int state = curr_predict_map[address];
     switch(state){
         case 0 :
-        if(taken) state = 1;
-        else state = 0;
-        curr_predict = false;
+        if(taken){
+            curr_predict_map[address] = 1;
+        }
+        else{
+            curr_predict_map[address] = 0;
+        }
+        
         break;
 
         case 1 :
-        if(taken) state = 1;
-        else state = 0;
-        curr_predict = true;
+        if(taken){
+            curr_predict_map[address] = 1;
+        }
+        else{
+            curr_predict_map[address] = 0;
+        }
         break;
 
         default : 
@@ -71,32 +159,39 @@ RILPredictor::predict_LT(bool taken)
     }
 }
 
+
+
 void 
-RILPredictor::predict_A1(bool taken)
+RILPredictor::update_A1(Addr address, bool taken)
 {
+    int state = curr_predict_map[address];
     switch(state){
         case 0 :
-        if(taken) state = 1;
-        else state = 0;
-        curr_predict = false;
+        if(taken) 
+            curr_predict_map[address] = 1;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 1 :
-        if(taken) state = 3;
-        else state = 2;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 2;
         break;
 
         case 2 :
-        if(taken) state = 1;
-        else state = 0;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 1;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 3 :
-        if(taken) state = 3;
-        else state = 2;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");
@@ -105,31 +200,36 @@ RILPredictor::predict_A1(bool taken)
 
 
 void 
-RILPredictor::predict_A2(bool taken)
+RILPredictor::update_A2(Addr address, bool taken)
 {
+    int state = curr_predict_map[address];
     switch(state){
         case 0 :
-        if(taken) state = 1;
-        else state = 0;
-        curr_predict = false;
+        if(taken) 
+            curr_predict_map[address] = 1;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 1 :
-        if(taken) state = 2;
-        else state = 0;
-        curr_predict = false;
+        if(taken) 
+            curr_predict_map[address] = 2;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 2 :
-        if(taken) state = 3;
-        else state = 1;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 1;
         break;
 
         case 3 :
-        if(taken) state = 3;
-        else state = 2;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");
@@ -137,31 +237,36 @@ RILPredictor::predict_A2(bool taken)
 }
 
 void 
-RILPredictor::predict_A3(bool taken)
+RILPredictor::update_A3(Addr address, bool taken)
 {
+    int state = curr_predict_map[address];
     switch(state){
         case 0 :
-        if(taken) state = 1;
-        else state = 0;
-        curr_predict = false;
+        if(taken) 
+            curr_predict_map[address] = 1;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 1 :
-        if(taken) state = 3;
-        else state = 0;
-        curr_predict = false;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 2 :
-        if(taken) state = 3;
-        else state = 0;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 3 :
-        if(taken) state = 3;
-        else state = 2;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");
@@ -169,34 +274,41 @@ RILPredictor::predict_A3(bool taken)
 }
 
 void 
-RILPredictor::predict_A4(bool taken)
+RILPredictor::update_A4(Addr address, bool taken)
 {
+    int state = curr_predict_map[address];
     switch(state){
         case 0 :
-        if(taken) state = 1;
-        else state = 0;
-        curr_predict = false;
+        if(taken) 
+            curr_predict_map[address] = 1;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 1 :
-        if(taken) state = 3;
-        else state = 0;
-        curr_predict = false;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 0;
         break;
 
         case 2 :
-        if(taken) state = 3;
-        else state = 1;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 1;
         break;
 
         case 3 :
-        if(taken) state = 3;
-        else state = 2;
-        curr_predict = true;
+        if(taken) 
+            curr_predict_map[address] = 3;
+        else 
+            curr_predict_map[address] = 2;
         break;
         default : 
         DPRINTF(RILPredictor, "Predictor FSM error!\n");
     }
 }
+
+
 
