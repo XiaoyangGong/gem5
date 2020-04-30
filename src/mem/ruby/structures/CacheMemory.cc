@@ -78,7 +78,7 @@ CacheMemory::CacheMemory(const Params *p)
     m_block_size = p->block_size;  // may be 0 at this point. Updated in init()
     m_use_occupancy = dynamic_cast<WeightedLRUPolicy*>(
                                     m_replacementPolicy_ptr) ? true : false;
-    m_predictor = new 
+    m_predictor = new RILPredictor("test");
 }
 
 void
@@ -198,7 +198,10 @@ void CacheMemory::predict(MachineID machineID, Addr address)
         // Get invalid cache line's data value
         DataBlock& dataBlk = entry->getDataBlk();
         DataBlock* dataBlk_ptr = &dataBlk;
-        taken = 1;
+        if(m_predictor.predict())
+            taken = 1;
+        else
+            taken = 0;
         // Store invalid line data and T/NT to predict_result
         predict_res.blk = dataBlk_ptr;
         predict_res.taken = taken;
@@ -245,6 +248,12 @@ void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock
     // Else if we predict non-taken and predict value doesn't match with actual value
     // Increment score by one
     if(taken != -1){
+        // Update m_predictor
+        if(taken == 1)
+            m_predictor.update_predict(true);
+        else if(taken == 0)
+             m_predictor.update_predict(false);
+           
         //DPRINTF(RubyCacheMemory, "Remove Machine ID: %d\n", receiverID);
         // Get invalid line data and taken/nontaken info
         DataBlock& predict_blk = *predict_res.blk;

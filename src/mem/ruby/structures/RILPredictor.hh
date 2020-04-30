@@ -5,14 +5,14 @@
 #include <unordered_map>
 #include <vector>
 
-#include "params/RILPredictor.hh"
+// #include "params/RILPredictor.hh"
 #include "sim/sim_object.hh"
 #include "base/types.hh"
 
 class RILPredictor : public SimObject
 {
   public:
-    RILPredictor(RILPredictorParams *p, string predictor_type);
+    RILPredictor(string predictor_type);
     ~RILPredictor();
 
     bool predict(Addr address);

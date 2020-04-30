@@ -6,11 +6,13 @@
 #include "sim/sim_object.hh"
 #include "debug/RILPredictor.hh"
 
+/*
 RILPredictor*
 RILPredictorParams::create()
 {
     return new RILPredictor(this);
 }
+*/
 
 RILPredictor::RILPredictor(RILPredictorParams *params, string predictor_type) :
 SimObject(params),
