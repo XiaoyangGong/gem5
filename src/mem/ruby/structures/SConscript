@@ -47,4 +47,5 @@ Source('TimerTable.cc')
 Source('BankedArray.cc')
 
 DebugFlag('RubyCacheMemory', "Debug flag for /src/mem/ruby/structures/CacheMemory")
+DebugFlag('RILPredictor', "Debug flag for /src/mem/ruby/structures/RILPredictor")
 

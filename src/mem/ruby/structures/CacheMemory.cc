@@ -41,6 +41,7 @@
 #include "mem/ruby/system/RubySystem.hh"
 #include "mem/ruby/common/MachineID.hh"
 #include "mem/ruby/common/DataBlock.hh"
+#include "mem/ruby/structures/RILPredictor.hh"
 
 using namespace std;
 
@@ -175,8 +176,18 @@ CacheMemory::getAddressAtIdx(int idx) const
     return entry->m_Address;
 }
 
-//bool
-//CacheMemory::predict(Addr address, RubyRequestType type, DataBlock*& data_ptr)
+
+// Return 1 for taken, 0 for non-taken
+// TODO: should put predictor related function into a seperate .cc file
+int predictor(){
+
+}
+
+void update_predictor(){
+
+}
+
+
 void CacheMemory::predict(MachineID machineID, Addr address)
 {   
    // Get requesting cache's ID
