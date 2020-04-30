@@ -44,6 +44,7 @@
 
 using namespace std;
 
+RILPredictor* m_predictor;
 
 ostream&
 operator<<(ostream& out, const CacheMemory& obj)
@@ -77,8 +78,7 @@ CacheMemory::CacheMemory(const Params *p)
     m_block_size = p->block_size;  // may be 0 at this point. Updated in init()
     m_use_occupancy = dynamic_cast<WeightedLRUPolicy*>(
                                     m_replacementPolicy_ptr) ? true : false;
-    std::string predictor_type = "test";
-    m_predictor = new RILPredictor(predictor_type);
+    //m_predictor = new RILPredictor(0);
 }
 
 void
@@ -219,7 +219,6 @@ void CacheMemory::predict(MachineID machineID, Addr address)
 }
 
 void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock& actual_blk){
-
     // Get receiving cache's ID
     int receiverID = machineID.num;
 
@@ -233,12 +232,7 @@ void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock
     // Find predict result in table
     predict_res_t predict_res = m_predict[receiverID];
 
-    /*
-    // Remove <requestor, data> from table
-    int rm_success = m_predict.erase(receiverID);
-    // Return if fail to remove (receiver ID doesn't exsit)
-    if(!rm_success) return;
-    */
+
 
     int taken = predict_res.taken;
 
@@ -252,7 +246,7 @@ void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock
         if(taken == 1)
             m_predictor->update_predict(true);
         else if(taken == 0)
-             m_predictor->update_predict(false);
+            m_predictor->update_predict(false);
            
         //DPRINTF(RubyCacheMemory, "Remove Machine ID: %d\n", receiverID);
         // Get invalid line data and taken/nontaken info

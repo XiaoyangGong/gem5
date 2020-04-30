@@ -43,6 +43,9 @@
 #include "mem/ruby/system/CacheRecorder.hh"
 #include "params/RubySystem.hh"
 #include "sim/clocked_object.hh"
+#include "mem/ruby/system/RILPredictor.hh"
+
+extern RILPredictor* m_predictor;
 
 class Network;
 class AbstractController;
@@ -133,7 +136,7 @@ class RubySystem : public ClockedObject
     Network* m_network;
     std::vector<AbstractController *> m_abs_cntrl_vec;
     Cycles m_start_cycle;
-
+    
   public:
     Profiler* m_profiler;
     CacheRecorder* m_cache_recorder;

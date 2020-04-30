@@ -50,3 +50,4 @@ Source('RubySystem.cc')
 Source('Sequencer.cc')
 if env['BUILD_GPU']:
     Source('VIPERCoalescer.cc')
+Source('RILPredictor.cc')

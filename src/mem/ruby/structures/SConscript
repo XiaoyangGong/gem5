@@ -45,7 +45,7 @@ Source('PersistentTable.cc')
 Source('Prefetcher.cc')
 Source('TimerTable.cc')
 Source('BankedArray.cc')
-Source('RILPredictor.cc')
+
 
 DebugFlag('RubyCacheMemory', "Debug flag for /src/mem/ruby/structures/CacheMemory")
 DebugFlag('RILPredictor', "Debug flag for /src/mem/ruby/structures/RILPredictor")

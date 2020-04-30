@@ -1,5 +1,5 @@
-#ifndef __MEM_RUBY_STRUCTURES_RILPREDICTOR_HH__
-#define __MEM_RUBY_STRUCTURES_RILPREDICTOR_HH__
+#ifndef __MEM_RUBY_SYSTEM_RILPREDICTOR_HH__
+#define __MEM_RUBY_SYSTEM_RILPREDICTOR_HH__
 
 #include <string>
 #include <unordered_map>
@@ -12,7 +12,7 @@
 class RILPredictor
 {
   public:
-    RILPredictor(std::string& predictor_type);
+    RILPredictor(int predictor_type);
     ~RILPredictor();
 
     bool predict(Addr address);
@@ -21,7 +21,7 @@ class RILPredictor
     void update_predict(bool taken);
 
   private:
-    const std::string& predictor_type;
+    const int predictor_type;
     const int local_hist_size;
     const int global_hist_size; 
     int state;
@@ -41,4 +41,4 @@ class RILPredictor
 };
 
 
-#endif // __MEM_RUBY_STRUCTURES_RILPREDICTOR_HH__
+#endif // __MEM_RUBY_SYSTEM_RILPREDICTOR_HH__

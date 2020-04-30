@@ -4,11 +4,11 @@ Read-invalid-line predictor
 Author: Xiaoyang Gong 
 */
 
-#include "mem/ruby/structures/RILPredictor.hh"
+#include "mem/ruby/system/RILPredictor.hh"
 #include "sim/sim_object.hh"
 #include "debug/RILPredictor.hh"
 
-RILPredictor::RILPredictor(std::string& predictor_type) :
+RILPredictor::RILPredictor(int predictor_type) :
 predictor_type(predictor_type),
 local_hist_size(128),
 global_hist_size(128),
@@ -28,19 +28,19 @@ RILPredictor::predict(Addr address)
 void
 RILPredictor::update_predict(bool actual_taken)
 {
-    if(predictor_type.compare("LT") == 0)
+    if(predictor_type == 0)
         predict_LT(actual_taken);
-    else if(predictor_type.compare("A1") == 0)
+    else if(predictor_type == 1)
         predict_A1(actual_taken);
-    else if(predictor_type.compare("A2") == 0)
+    else if(predictor_type == 2)
         predict_A2(actual_taken);
-    else if(predictor_type.compare("A3") == 0)
+    else if(predictor_type == 3)
         predict_A3(actual_taken);
-    else if(predictor_type.compare("A4") == 0)
+    else if(predictor_type == 4)
         predict_A4(actual_taken);
     else{
-        std::cout << "Wrong predictor type / predictor undefined. Exit..." << std::endl;
-        exit(1);
+        // Assume always taken if type of predictor is undefined
+        curr_predict = true;
     }
 
 }
