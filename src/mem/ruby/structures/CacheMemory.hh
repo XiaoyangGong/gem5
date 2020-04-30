@@ -48,6 +48,7 @@
 #include "params/RubyCache.hh"
 #include "sim/sim_object.hh"
 #include "mem/ruby/common/MachineID.hh"
+#include "mem/ruby/structures/RILPredictor.hh"
 
 
 extern int m_total_predict;
@@ -176,7 +177,7 @@ class CacheMemory : public SimObject
     CacheMemory& operator=(const CacheMemory& obj);
 
   private:
-    RILPredictor::RILPredictor* m_predictor;
+    RILPredictor* m_predictor;
     struct predict_res_t{
         DataBlock* blk = new DataBlock();
         int taken = -1;
@@ -198,7 +199,7 @@ class CacheMemory : public SimObject
     std::unordered_map<Addr, std::list<bool>> m_local_hist;
 
     // Global history buffer.
-    std::std::list<bool> m_global_hist;
+    std::list<bool> m_global_hist;
     /**
      * We use BaseReplacementPolicy from Classic system here, hence we can use
      * different replacement policies from Classic system in Ruby system.

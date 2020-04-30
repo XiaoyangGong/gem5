@@ -41,7 +41,6 @@
 #include "mem/ruby/system/RubySystem.hh"
 #include "mem/ruby/common/MachineID.hh"
 #include "mem/ruby/common/DataBlock.hh"
-#include "mem/ruby/structures/RILPredictor.hh"
 
 using namespace std;
 
@@ -78,7 +77,8 @@ CacheMemory::CacheMemory(const Params *p)
     m_block_size = p->block_size;  // may be 0 at this point. Updated in init()
     m_use_occupancy = dynamic_cast<WeightedLRUPolicy*>(
                                     m_replacementPolicy_ptr) ? true : false;
-    m_predictor = new RILPredictor("test");
+    std::string predictor_type = "test";
+    m_predictor = new RILPredictor(predictor_type);
 }
 
 void
@@ -198,7 +198,7 @@ void CacheMemory::predict(MachineID machineID, Addr address)
         // Get invalid cache line's data value
         DataBlock& dataBlk = entry->getDataBlk();
         DataBlock* dataBlk_ptr = &dataBlk;
-        if(m_predictor.predict())
+        if(m_predictor->predict(address))
             taken = 1;
         else
             taken = 0;
@@ -250,9 +250,9 @@ void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock
     if(taken != -1){
         // Update m_predictor
         if(taken == 1)
-            m_predictor.update_predict(true);
+            m_predictor->update_predict(true);
         else if(taken == 0)
-             m_predictor.update_predict(false);
+             m_predictor->update_predict(false);
            
         //DPRINTF(RubyCacheMemory, "Remove Machine ID: %d\n", receiverID);
         // Get invalid line data and taken/nontaken info
