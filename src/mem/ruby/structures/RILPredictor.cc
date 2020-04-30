@@ -28,7 +28,21 @@ RILPredictor::predict(Addr address)
 void
 RILPredictor::update_predict(bool actual_taken)
 {
-    predict_LT(actual_taken);
+    if(predictor_type.compare("LT") == 0)
+        predict_LT(actual_taken);
+    else if(predictor_type.compare("A1") == 0)
+        predict_A1(actual_taken);
+    else if(predictor_type.compare("A2") == 0)
+        predict_A2(actual_taken);
+    else if(predictor_type.compare("A3") == 0)
+        predict_A3(actual_taken);
+    else if(predictor_type.compare("A4") == 0)
+        predict_A4(actual_taken);
+    else{
+        std::cout << "Wrong predictor type / predictor undefined. Exit..." << std::endl;
+        exit(1);
+    }
+
 }
 
 
