@@ -216,7 +216,7 @@ bool CacheMemory::predict(MachineID machineID, Addr address)
     //DPRINTF(RubyCacheMemory, "Create Machine ID: %d\n", requestorID);
 
     //DPRINTF(RubyCacheMemory, "Node ID is %d\n", machineID.num);
-    return (taken == 1) ? 1 : 0;
+    return /*(taken == 1) ? true :*/ false;
 }
 
 void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock& actual_blk){

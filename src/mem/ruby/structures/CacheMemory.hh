@@ -66,7 +66,7 @@ class CacheMemory : public SimObject
 
     // Public Methods
     // Make prediction
-    void predict(MachineID machineID, Addr address);
+    bool predict(MachineID machineID, Addr address);
 
     // Check predicted value with actual value
     void predictScoreBoard(MachineID machineID, Addr address, DataBlock& dataBlk);

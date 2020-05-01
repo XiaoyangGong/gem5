@@ -36,6 +36,7 @@ enumeration(CoherenceRequestType, desc="...") {
   GET_INSTR, desc="Get Instruction";
   INV,       desc="INValidate";
   PUTX,      desc="Replacement message";
+  PREDICT,   desc="Get PREDICTion value";
 
   WB_ACK,    desc="Writeback ack";
 
@@ -54,7 +55,7 @@ enumeration(CoherenceResponseType, desc="...") {
   UNBLOCK, desc="unblock";
   EXCLUSIVE_UNBLOCK, desc="exclusive unblock";
   INV, desc="Invalidate from directory";
-  //PREDICTED,   desc="Predict to take stale value";
+  PREDICTED,   desc="Predict to take stale value";
 }
 
 // RequestMsg
@@ -69,6 +70,8 @@ structure(RequestMsg, desc="...", interface="Message") {
   int Len;
   bool Dirty, default="false",  desc="Dirty bit";
   PrefetchBit Prefetch,         desc="Is this a prefetch request";
+  bool Predicted, default="true",   desc="Predict rollback would occur";
+ 
 
   bool functionalRead(Packet *pkt) {
     // Only PUTX messages contains the data block
@@ -96,6 +99,7 @@ structure(ResponseMsg, desc="...", interface="Message") {
   bool Dirty, default="false",  desc="Dirty bit";
   int AckCount, default="0",  desc="number of acks in this message";
   MessageSizeType MessageSize,  desc="size category of the message";
+  bool Predicted, default="true",   desc="Predict rollback would occur";
 
   bool functionalRead(Packet *pkt) {
     // Valid data block is only present in message with following types
