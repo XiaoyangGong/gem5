@@ -82,6 +82,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     IM, AccessPermission:Busy, desc="L1 idle, issued GETX, have not seen response yet";
     SM, AccessPermission:Read_Only, desc="L1 idle, issued GETX, have not seen response yet";
     IS_I, AccessPermission:Busy, desc="L1 idle, issued GETS, saw Inv before data because directory doesn't block on GETS hit";
+    IP, AccessPermission:Busy, desc="L1 idle, issued Predict, have not seen prediction yet";
 
     M_I, AccessPermission:Busy, desc="L1 replacing, waiting for ACK";
     SINK_WB_ACK, AccessPermission:Busy, desc="This is to sink WB_Acks from L2";
@@ -124,6 +125,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     PF_Load,    desc="load request from prefetcher";
     PF_Ifetch,  desc="instruction fetch request from prefetcher";
     PF_Store,   desc="exclusive load request from prefetcher";
+
+    Predict,    desc="predict to wait for accurate data in IS";
   }
 
   // TYPES
@@ -405,6 +408,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
           }
         } else if (in_msg.Type == CoherenceResponseType:WB_ACK) {
           trigger(Event:WB_Ack, in_msg.addr, cache_entry, tbe);
+        //} else if (in_msg.Type == CoherenceResponseType:PREDICT) {
+          //trigger(Event:Predict, in_msg.addr, cache_entry, tbe);
         } else {
           error("Invalid L1 response type");
         }
@@ -1002,7 +1007,10 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   // 2. Compare prediction with actual data
 
   action(pd_predict, "pd", desc="Predict if processor should read from invalid cache line"){
-      L1Dcache.predict(machineID, address);
+      Entry stale_cache_entry := getL1DCacheEntry(address);
+      if (L1Dcache.predict(machineID, address)) {
+        trigger(Event:Predict, address, stale_cache_entry, tbe);
+      }
   }
 
   action(cmpd_comparePredict, "cmppd", desc="Compare actual value w/ predicted value"){
@@ -1019,7 +1027,7 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
   //*****************************************************
 
   // Transitions for Load/Store/Replacement/WriteBack from transient states
-  transition({IS, IM, IS_I, M_I, SM, SINK_WB_ACK}, {Load, Ifetch, Store, L1_Replacement}) {
+  transition({IP, IS, IM, IS_I, M_I, SM, SINK_WB_ACK}, {Load, Ifetch, Store, L1_Replacement}) {
     z_stallAndWaitMandatoryQueue;
   }
 
@@ -1031,9 +1039,33 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
     z_stallAndWaitMandatoryQueue;
   }
 
-  transition({IS, IM, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM}, PF_L1_Replacement) {
+  transition({IP, IS, IM, IS_I, M_I, SM, SINK_WB_ACK, PF_IS, PF_IS_I, PF_IM, PF_SM}, PF_L1_Replacement) {
     z_stallAndWaitOptionalQueue;
   }
+
+  transition(IP, Predict, IS) {
+    // Nothing here to push it to the IS track
+  }
+
+  transition(IP, Data_all_Acks, S) {
+    //u_writeDataToL1Cache;
+    hx_load_hit;
+    cmpd_comparePredict;
+    //s_deallocateTBE;
+    o_popIncomingResponseQueue;
+    kd_wakeUpDependents;
+  }
+
+  transition(IP, DataS_fromL1, S) {
+    //u_writeDataToL1Cache;
+    cmpd_comparePredict;
+    j_sendUnblock;
+    hx_load_hit;
+    //s_deallocateTBE;
+    o_popIncomingResponseQueue;
+    kd_wakeUpDependents;
+  }
+
 
   // Transitions from Idle
   transition({NP,I}, {L1_Replacement, PF_L1_Replacement}) {
@@ -1045,8 +1077,8 @@ machine(MachineType:L1Cache, "MESI Directory L1 Cache CMP")
       pq_popPrefetchQueue;
   }
 
-  transition({NP,I}, Load, IS) {
-    pd_predict
+  transition({NP,I}, Load, IP) {
+    pd_predict;
     oo_allocateL1DCacheBlock;
     i_allocateTBE;
     a_issueGETS;

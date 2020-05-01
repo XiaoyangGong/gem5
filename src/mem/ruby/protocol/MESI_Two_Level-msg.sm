@@ -54,6 +54,7 @@ enumeration(CoherenceResponseType, desc="...") {
   UNBLOCK, desc="unblock";
   EXCLUSIVE_UNBLOCK, desc="exclusive unblock";
   INV, desc="Invalidate from directory";
+  //PREDICTED,   desc="Predict to take stale value";
 }
 
 // RequestMsg

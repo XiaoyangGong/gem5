@@ -177,7 +177,7 @@ CacheMemory::getAddressAtIdx(int idx) const
     return entry->m_Address;
 }
 
-void CacheMemory::predict(MachineID machineID, Addr address)
+bool CacheMemory::predict(MachineID machineID, Addr address)
 {   
    // Get requesting cache's ID
     int requestorID = machineID.num;
@@ -216,6 +216,7 @@ void CacheMemory::predict(MachineID machineID, Addr address)
     //DPRINTF(RubyCacheMemory, "Create Machine ID: %d\n", requestorID);
 
     //DPRINTF(RubyCacheMemory, "Node ID is %d\n", machineID.num);
+    return (taken == 1) ? 1 : 0;
 }
 
 void CacheMemory::predictScoreBoard(MachineID machineID, Addr address, DataBlock& actual_blk){
